@@ -91,8 +91,8 @@ if st.button("הפק דוח PDF"):
             c.drawString(100, y_position - 20, f"תיאור: {row['תיאור הליקוי']}, קדימות: {row['קדימות']}")
             y_position -= 40
 
-    c.save()
-    return pdf_filename
+        c.save()
+        return pdf_filename
 
     
     with open(pdf_filename, "rb") as f:
