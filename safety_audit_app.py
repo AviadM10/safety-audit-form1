@@ -2,25 +2,49 @@ import streamlit as st
 import pandas as pd
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import datetime
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+import arabic_reshaper
+from bidi.algorithm import get_display
 
-# כותרת האפליקציה
+# רישום פונט תומך עברית
+pdfmetrics.registerFont(TTFont('FreeSans', '/usr/share/fonts/truetype/freefont/FreeSans.ttf'))
+
+def fix_rtl(text):
+    """מתקן כיווניות טקסט בעברית ל-ReportLab"""
+    reshaped_text = arabic_reshaper.reshape(text)
+    return get_display(reshaped_text)
+
+def generate_pdf(school_name, results_df):
+    pdf_filename = "safety_audit_report.pdf"
+    c = canvas.Canvas(pdf_filename, pagesize=A4)
+    width, height = A4
+
+    c.setFont("FreeSans", 16)
+    c.drawString(100, height - 50, fix_rtl("דוח מבדק בטיחות"))
+
+    c.setFont("FreeSans", 12)
+    c.drawString(100, height - 80, fix_rtl(f"שם המוסד: {school_name}"))
+
+    y_position = height - 120
+    for index, row in results_df.iterrows():
+        c.drawString(100, y_position, fix_rtl(f"{row['קטגוריה']} - {row['פריט נבדק']}: {row['מצב']}"))
+        c.drawString(100, y_position - 20, fix_rtl(f"תיאור: {row['תיאור הליקוי']}, קדימות: {row['קדימות']}"))
+        y_position -= 40
+
+    c.save()
+    return pdf_filename
+
+# ממשק משתמש ב-Streamlit
 st.title("טופס דיגיטלי למבדק בטיחות במוסדות חינוך")
 
 # מילוי פרטי מוסד חינוכי
 st.header("פרטי המוסד")
 school_name = st.text_input("שם המוסד")
-school_id = st.text_input("סמל המוסד")
-ownership = st.text_input("בעלות (רשות מקומית / פרטית)")
-location = st.text_input("יישוב")
-address = st.text_input("כתובת")
-num_students = st.number_input("מספר תלמידים", min_value=0, step=1)
-year_established = st.number_input("שנת הקמה", min_value=1900, max_value=datetime.datetime.today().year, step=1)
-phone = st.text_input("טלפון המוסד")
-audit_date = st.date_input("תאריך המבדק", datetime.date.today())
 
-# הגדרת טבלה למבדק
+# יצירת טבלה דינמית לבדיקות
 st.header("רשימת הבדיקות")
+data = []
 categories = ["כיתות לימוד", "חצרות", "בטיחות אש", "מערכות חשמל"]
 elements = {
     "כיתות לימוד": ["רצפה", "תאורה"],
@@ -29,7 +53,6 @@ elements = {
     "מערכות חשמל": ["לוח חשמל ראשי"]
 }
 
-data = []
 for category in categories:
     st.subheader(category)
     for item in elements[category]:
@@ -49,51 +72,6 @@ results_df = pd.DataFrame(data, columns=["קטגוריה", "פריט נבדק", 
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, "דוח מבדק בטיחות", ln=True, align="C")
-    pdf.ln(10)
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(200, 10, f"שם המוסד: {school_name}", ln=True, align="R")
-    pdf.cell(200, 10, f"סמל מוסד: {school_id}", ln=True, align="R")
-    pdf.cell(200, 10, f"כתובת: {address}, {location}", ln=True, align="R")
-    pdf.cell(200, 10, f"מספר תלמידים: {num_students}", ln=True, align="R")
-    pdf.cell(200, 10, f"תאריך מבדק: {audit_date}", ln=True, align="R")
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(200, 10, "ממצאים לפי תחומים:", ln=True, align="R")
-    pdf.ln(5)
-    
-    pdf.set_font("Arial", "", 10)
-    for index, row in results_df.iterrows():
-        pdf.cell(200, 10, f"קטגוריה: {row['קטגוריה']} - {row['פריט נבדק']}", ln=True, align="R")
-        pdf.cell(200, 10, f"מצב: {row['מצב']}", ln=True, align="R")
-        pdf.cell(200, 10, f"תיאור: {row['תיאור הליקוי']}", ln=True, align="R")
-        pdf.cell(200, 10, f"קדימות: {row['קדימות']}", ln=True, align="R")
-        pdf.ln(5)
-
-    pdf_filename = "safety_audit_report.pdf"
-    def generate_pdf(school_name, results_df):
-        pdf_filename = "safety_audit_report.pdf"
-        c = canvas.Canvas(pdf_filename, pagesize=A4)
-        width, height = A4
-
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(100, height - 50, "דוח מבדק בטיחות")
-
-        c.setFont("Helvetica", 12)
-        c.drawString(100, height - 80, f"שם המוסד: {school_name}")
-
-        y_position = height - 120
-        for index, row in results_df.iterrows():
-            c.drawString(100, y_position, f"{row['קטגוריה']} - {row['פריט נבדק']}: {row['מצב']}")
-            c.drawString(100, y_position - 20, f"תיאור: {row['תיאור הליקוי']}, קדימות: {row['קדימות']}")
-            y_position -= 40
-
-        c.save()
-        return pdf_filename
-
-    
-    with open(pdf_filename, "rb") as f:
-        st.download_button("הורד דוח PDF", f, file_name=pdf_filename, mime="application/pdf")
+    pdf_file = generate_pdf(school_name, results_df)
+    with open(pdf_file, "rb") as f:
+        st.download_button("הורד דוח PDF", f, file_name=pdf_file, mime="application/pdf")
