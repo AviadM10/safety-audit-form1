@@ -32,13 +32,13 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
     elements.append(Spacer(1, 12))  # רווח לפני טבלה
     
-    # פרטי מוסד
-    details = [[fix_rtl("שם המוסד"), fix_rtl(school_name)],
-               [fix_rtl("סמל מוסד"), fix_rtl(school_id)],
-               [fix_rtl("טלפון"), fix_rtl(phone)],
-               [fix_rtl("עיר"), fix_rtl(city)],
-               [fix_rtl("רשות/בעלות"), fix_rtl(ownership)]]
-    details_table = Table(details, colWidths=[150, 300])
+    # פרטי מוסד (ימין לשמאל)
+    details = [[fix_rtl(school_name), fix_rtl("שם המוסד")],
+               [fix_rtl(school_id), fix_rtl("סמל מוסד")],
+               [fix_rtl(phone), fix_rtl("טלפון")],
+               [fix_rtl(city), fix_rtl("עיר")],
+               [fix_rtl(ownership), fix_rtl("רשות/בעלות")]]
+    details_table = Table(details, colWidths=[300, 150])
     details_table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
@@ -60,7 +60,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
                 img = ""
         data.append([img, fix_rtl(row['קדימות']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['מצב']), fix_rtl(row['פריט נבדק']), fix_rtl(row['קטגוריה'])])
 
-    table = Table(data, colWidths=[60, 60, 120, 60, 80, 80])
+    table = Table(data, colWidths=[60, 70, 150, 70, 100, 100])
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
