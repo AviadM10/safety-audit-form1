@@ -7,13 +7,16 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import arabic_reshaper
 from bidi.algorithm import get_display
 import os
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 
-# רישום פונט תומך עברית מהפרויקט
+# רישום פונט תומך עברית
 font_path = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
+pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 
 # הגדרת סגנון עם גופן עברית
 styles = getSampleStyleSheet()
-hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='Rubik-Regular', fontSize=12, alignment=2)
+hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2)
 
 def fix_rtl(text):
     """מתקן כיווניות טקסט בעברית ל-ReportLab"""
@@ -38,7 +41,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     details_table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Rubik-Regular'),
+        ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
@@ -59,7 +62,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Rubik-Regular'),
+        ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
