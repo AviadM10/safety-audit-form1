@@ -6,9 +6,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 import arabic_reshaper
 from bidi.algorithm import get_display
+import os
 
-# רישום פונט תומך עברית
-pdfmetrics.registerFont(TTFont('FreeSans', '/usr/share/fonts/truetype/freefont/FreeSans.ttf'))
+# רישום פונט תומך עברית מהפרויקט
+font_path = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
+pdfmetrics.registerFont(TTFont('Rubik', font_path))
 
 def fix_rtl(text):
     """מתקן כיווניות טקסט בעברית ל-ReportLab"""
@@ -20,10 +22,10 @@ def generate_pdf(school_name, results_df):
     c = canvas.Canvas(pdf_filename, pagesize=A4)
     width, height = A4
 
-    c.setFont("FreeSans", 16)
+    c.setFont("Rubik", 16)
     c.drawString(100, height - 50, fix_rtl("דוח מבדק בטיחות"))
 
-    c.setFont("FreeSans", 12)
+    c.setFont("Rubik", 12)
     c.drawString(100, height - 80, fix_rtl(f"שם המוסד: {school_name}"))
 
     y_position = height - 120
