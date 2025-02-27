@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import arabic_reshaper
@@ -30,6 +30,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     
     # כותרת הדוח
     elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
+    elements.append(Spacer(1, 12))  # רווח לפני טבלה
     
     # פרטי מוסד
     details = [[fix_rtl("שם המוסד"), fix_rtl(school_name)],
@@ -46,9 +47,10 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(details_table)
+    elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
     
-    # טבלת הבדיקות
-    data = [[fix_rtl("קטגוריה"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
+    # טבלת הבדיקות מסודרת מימין לשמאל
+    data = [[fix_rtl("תמונה"), fix_rtl("קדימות"), fix_rtl("תיאור הליקוי"), fix_rtl("מצב"), fix_rtl("פריט נבדק"), fix_rtl("קטגוריה")]]
     for _, row in results_df.iterrows():
         img = ""
         if row['תמונה']:
@@ -56,9 +58,9 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
                 img = Image(row['תמונה'], width=50, height=50)
             except:
                 img = ""
-        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['קדימות']), img])
+        data.append([img, fix_rtl(row['קדימות']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['מצב']), fix_rtl(row['פריט נבדק']), fix_rtl(row['קטגוריה'])])
 
-    table = Table(data, colWidths=[80, 80, 60, 120, 60, 60])
+    table = Table(data, colWidths=[60, 60, 120, 60, 80, 80])
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
