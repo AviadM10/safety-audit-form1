@@ -3,13 +3,17 @@ import pandas as pd
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import arabic_reshaper
 from bidi.algorithm import get_display
 import os
 
 # רישום פונט תומך עברית מהפרויקט
 font_path = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
+
+# הגדרת סגנון עם גופן עברית
+styles = getSampleStyleSheet()
+hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='Rubik-Regular', fontSize=12, alignment=2)
 
 def fix_rtl(text):
     """מתקן כיווניות טקסט בעברית ל-ReportLab"""
@@ -20,10 +24,9 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     pdf_filename = "safety_audit_report.pdf"
     doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
     elements = []
-    styles = getSampleStyleSheet()
     
     # כותרת הדוח
-    elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), styles['Title']))
+    elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
     
     # פרטי מוסד
     details = [[fix_rtl("שם המוסד"), fix_rtl(school_name)],
@@ -35,7 +38,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     details_table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Rubik-Regular'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
@@ -56,7 +59,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Rubik-Regular'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
