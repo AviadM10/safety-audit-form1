@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from fpdf import FPDF
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 import datetime
 
 # כותרת האפליקציה
@@ -73,7 +74,26 @@ if st.button("הפק דוח PDF"):
         pdf.ln(5)
 
     pdf_filename = "safety_audit_report.pdf"
-    pdf.output(pdf_filename)
+    def generate_pdf(school_name, results_df):
+    pdf_filename = "safety_audit_report.pdf"
+    c = canvas.Canvas(pdf_filename, pagesize=A4)
+    width, height = A4
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(100, height - 50, "דוח מבדק בטיחות")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(100, height - 80, f"שם המוסד: {school_name}")
+
+    y_position = height - 120
+    for index, row in results_df.iterrows():
+        c.drawString(100, y_position, f"{row['קטגוריה']} - {row['פריט נבדק']}: {row['מצב']}")
+        c.drawString(100, y_position - 20, f"תיאור: {row['תיאור הליקוי']}, קדימות: {row['קדימות']}")
+        y_position -= 40
+
+    c.save()
+    return pdf_filename
+
     
     with open(pdf_filename, "rb") as f:
         st.download_button("הורד דוח PDF", f, file_name=pdf_filename, mime="application/pdf")
