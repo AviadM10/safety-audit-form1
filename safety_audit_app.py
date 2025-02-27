@@ -4,6 +4,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Image
+from reportlab.lib import colors
 import arabic_reshaper
 from bidi.algorithm import get_display
 import os
@@ -19,27 +21,54 @@ def fix_rtl(text):
 
 def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     pdf_filename = "safety_audit_report.pdf"
-    c = canvas.Canvas(pdf_filename, pagesize=A4)
-    width, height = A4
-
-    c.setFont("Rubik", 16)
-    c.drawRightString(width - 100, height - 50, fix_rtl("דוח מבדק בטיחות"))
-
-    c.setFont("Rubik", 12)
-    c.drawRightString(width - 100, height - 80, fix_rtl(f"שם המוסד: {school_name}"))
-    c.drawRightString(width - 100, height - 100, fix_rtl(f"סמל מוסד: {school_id}"))
-    c.drawRightString(width - 100, height - 120, fix_rtl(f"טלפון: {phone}"))
-    c.drawRightString(width - 100, height - 140, fix_rtl(f"עיר: {city}"))
-    c.drawRightString(width - 100, height - 160, fix_rtl(f"רשות/בעלות: {ownership}"))
-
-    y_position = height - 200
-    c.setFont("Rubik", 10)
+    doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
+    elements = []
+    
+    # כותרת הדוח
+    elements.append(canvas.Canvas(pdf_filename, pagesize=A4))
+    elements[-1].setFont("Rubik", 16)
+    elements[-1].drawRightString(500, 800, fix_rtl("דוח מבדק בטיחות"))
+    
+    # פרטי מוסד
+    details = [
+        [fix_rtl("שם המוסד"), fix_rtl(school_name)],
+        [fix_rtl("סמל מוסד"), fix_rtl(school_id)],
+        [fix_rtl("טלפון"), fix_rtl(phone)],
+        [fix_rtl("עיר"), fix_rtl(city)],
+        [fix_rtl("רשות/בעלות"), fix_rtl(ownership)]
+    ]
+    details_table = Table(details, colWidths=[150, 300])
+    details_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Rubik'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    elements.append(details_table)
+    
+    # טבלת המפגעים
+    data = [[fix_rtl("קטגוריה"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for index, row in results_df.iterrows():
-        c.drawRightString(width - 100, y_position, fix_rtl(f"{row['קטגוריה']} - {row['פריט נבדק']}: {row['מצב']}"))
-        c.drawRightString(width - 100, y_position - 20, fix_rtl(f"תיאור: {row['תיאור הליקוי']}, קדימות: {row['קדימות']}"))
-        y_position -= 40
-
-    c.save()
+        image_path = row['תמונה'] if row['תמונה'] else ""
+        img = Image(image_path, width=50, height=50) if image_path else ""
+        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['קדימות']), img])
+    
+    table = Table(data, colWidths=[80, 80, 60, 120, 60, 60])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Rubik'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    elements.append(table)
+    
+    doc.build(elements)
     return pdf_filename
 
 # ממשק משתמש ב-Streamlit
