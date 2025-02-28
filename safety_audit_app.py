@@ -9,6 +9,7 @@ from bidi.algorithm import get_display
 import os
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from datetime import datetime
 
 # רישום פונט תומך עברית
 font_path = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
@@ -23,7 +24,7 @@ def fix_rtl(text):
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
-def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
+def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df):
     pdf_filename = "safety_audit_report.pdf"
     doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
     elements = []
@@ -37,7 +38,9 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
                [fix_rtl(school_id), fix_rtl("סמל מוסד")],
                [fix_rtl(phone), fix_rtl("טלפון")],
                [fix_rtl(city), fix_rtl("עיר")],
-               [fix_rtl(ownership), fix_rtl("רשות/בעלות")]]
+               [fix_rtl(ownership), fix_rtl("רשות/בעלות")],
+               [fix_rtl(audit_date), fix_rtl("תאריך")],
+               [fix_rtl(auditor_name), fix_rtl("שם עורך המבדק")]]
     details_table = Table(details, colWidths=[300, 150])
     details_table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
@@ -50,7 +53,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
     elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
     
     # טבלת הבדיקות מסודרת מימין לשמאל
-    data = [[fix_rtl("תמונה"), fix_rtl("קדימות"), fix_rtl("תיאור הליקוי"), fix_rtl("מצב"), fix_rtl("פריט נבדק"), fix_rtl("קטגוריה")]]
+    data = [[fix_rtl("קטגוריה"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for _, row in results_df.iterrows():
         img = ""
         if row['תמונה']:
@@ -58,9 +61,9 @@ def generate_pdf(school_name, school_id, phone, city, ownership, results_df):
                 img = Image(row['תמונה'], width=50, height=50)
             except:
                 img = ""
-        data.append([img, fix_rtl(row['קדימות']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['מצב']), fix_rtl(row['פריט נבדק']), fix_rtl(row['קטגוריה'])])
+        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['קדימות']), img])
 
-    table = Table(data, colWidths=[60, 70, 150, 70, 100, 100])
+    table = Table(data, colWidths=[100, 100, 70, 150, 70, 60])
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
@@ -83,6 +86,8 @@ school_id = st.text_input("סמל מוסד")
 phone = st.text_input("טלפון")
 city = st.text_input("עיר")
 ownership = st.text_input("רשות/בעלות")
+audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
+auditor_name = st.text_input("שם עורך המבדק")
 
 # יצירת טבלה דינמית לבדיקות
 st.header("רשימת הבדיקות")
@@ -98,17 +103,10 @@ elements = {
 for category in categories:
     st.subheader(category)
     for item in elements[category]:
-        col1, col2, col3, col4, col5 = st.columns([2, 1, 2, 2, 2])
-        with col1:
-            st.text(item)
-        with col2:
-            condition = st.radio(f"מצב - {item}", ["תקין", "לא תקין"], key=f"condition_{category}_{item}")
-        with col3:
-            description = st.text_input(f"תיאור הליקוי - {item}", key=f"desc_{category}_{item}")
-        with col4:
-            priority = st.selectbox(f"קדימות - {item}", ["0 - מפגע חמור", "1 - תיקון מיידי", "2 - טיפול בתוכנית עבודה"], key=f"priority_{category}_{item}")
-        with col5:
-            image = st.file_uploader(f"העלה תמונה - {item}", type=["jpg", "png"], key=f"image_{category}_{item}")
+        condition = st.radio(f"מצב - {item}", ["תקין", "לא תקין"], key=f"condition_{category}_{item}")
+        description = st.text_input(f"תיאור הליקוי - {item}", key=f"desc_{category}_{item}")
+        priority = st.selectbox(f"קדימות - {item}", ["0 - מפגע חמור", "1 - תיקון מיידי", "2 - טיפול בתוכנית עבודה"], key=f"priority_{category}_{item}")
+        image = st.file_uploader(f"העלה תמונה - {item}", type=["jpg", "png"], key=f"image_{category}_{item}")
         data.append([category, item, condition, description, priority, image])
 
 # המרת הנתונים ל-DataFrame
@@ -116,6 +114,6 @@ results_df = pd.DataFrame(data, columns=["קטגוריה", "פריט נבדק", 
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
-    pdf_file = generate_pdf(school_name, school_id, phone, city, ownership, results_df)
+    pdf_file = generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df)
     with open(pdf_file, "rb") as f:
         st.download_button("הורד דוח PDF", f, file_name=pdf_file, mime="application/pdf")
