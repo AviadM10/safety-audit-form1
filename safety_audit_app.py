@@ -84,21 +84,33 @@ priority = st.selectbox("קדימות:", priority_options)
 description = st.text_area("תיאור נוסף:")
 image = st.file_uploader("העלה תמונה (אופציונלי):", type=["jpg", "png", "jpeg"])
 
-if st.button("הוסף לדוח"):
-    if 'data' not in st.session_state:
-        st.session_state.data = []
-    row = {"ליקוי": lakuy, "קטגוריה": category, "מספר סעיף": specific_section, "דרישה": selected_requirement, "קדימות": priority, "תיאור נוסף": description, "תמונה": image}
-    st.session_state.data.append(row)
-    st.success("הליקוי נוסף לדוח!")
-
-if 'data' in st.session_state and len(st.session_state.data) > 0:
-    st.subheader("דוח מבדק")
-    df = pd.DataFrame(st.session_state.data)
-    st.dataframe(df.drop(columns=["תמונה"]))
-
-    if st.button("ייצוא ל-Excel"):
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False)
-        output.seek(0)
-        st.download_button(label="הורד קובץ Excel", data=output, file_name="safety_audit.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+if st.button("ייצוא ל-PDF"):
+    output_pdf = io.BytesIO()
+    pdf = canvas.Canvas(output_pdf, pagesize=A4)
+    font_path = "fonts/Rubik-Regular.ttf"
+    
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont("Hebrew", font_path))
+        font_name = "Hebrew"
+    else:
+        font_name = "Helvetica"
+    
+    pdf.setFont(font_name, 12)
+    pdf.drawRightString(550, 800, rtl_text("דוח מבדק בטיחות"))
+    pdf.drawRightString(550, 780, rtl_text(f"שם בית הספר: {school_name}"))
+    pdf.drawRightString(550, 760, rtl_text(f"שם עורך המבדק: {inspector_name}"))
+    pdf.drawRightString(550, 740, rtl_text(f"תאריך המבדק: {date}"))
+    
+    y_position = 700
+    for index, row in relevant_requirements.iterrows():
+        text = rtl_text(f"ליקוי: {row['תיאור']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | קדימות: {priority}")
+        pdf.drawRightString(550, y_position, text)
+        y_position -= 20
+        if y_position < 50:
+            pdf.showPage()
+            pdf.setFont(font_name, 12)
+            y_position = 800
+    
+    pdf.save()
+    output_pdf.seek(0)
+    st.download_button(label="הורד PDF", data=output_pdf, file_name="safety_audit.pdf", mime="application/pdf")
