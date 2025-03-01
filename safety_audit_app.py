@@ -2,8 +2,11 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import io
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.utils import simpleSplit
 
 # פונקציה לטעינת רשימת הדרישות
 @st.cache_data
@@ -73,19 +76,25 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
 
     if st.button("ייצוא ל-PDF"):
         output_pdf = io.BytesIO()
-        pdf = canvas.Canvas(output_pdf, pagesize=letter)
-        pdf.drawString(100, 750, f"דוח מבדק בטיחות")
-        pdf.drawString(100, 730, f"שם בית הספר: {school_name}")
-        pdf.drawString(100, 710, f"שם עורך המבדק: {inspector_name}")
-        pdf.drawString(100, 690, f"תאריך המבדק: {date}")
+        pdf = canvas.Canvas(output_pdf, pagesize=A4)
+        pdfmetrics.registerFont(TTFont("Hebrew", "Arial.ttf"))
+        pdf.setFont("Hebrew", 12)
+        pdf.drawRightString(550, 800, "דוח מבדק בטיחות")
+        pdf.drawRightString(550, 780, f"שם בית הספר: {school_name}")
+        pdf.drawRightString(550, 760, f"שם עורך המבדק: {inspector_name}")
+        pdf.drawRightString(550, 740, f"תאריך המבדק: {date}")
         
-        y_position = 660
+        y_position = 700
         for index, row in df.iterrows():
-            pdf.drawString(100, y_position, f"ליקוי: {row['ליקוי']}, קטגוריה: {row['קטגוריה']}, סעיף: {row['מספר סעיף']}, דרישה: {row['דרישה']}, קדימות: {row['קדימות']}")
-            y_position -= 20
-            if y_position < 50:
-                pdf.showPage()
-                y_position = 750
+            text = f"ליקוי: {row['ליקוי']}, קטגוריה: {row['קטגוריה']}, סעיף: {row['מספר סעיף']}, דרישה: {row['דרישה']}, קדימות: {row['קדימות']}"
+            wrapped_text = simpleSplit(text, "Hebrew", 500)
+            for line in wrapped_text:
+                pdf.drawRightString(550, y_position, line)
+                y_position -= 20
+                if y_position < 50:
+                    pdf.showPage()
+                    pdf.setFont("Hebrew", 12)
+                    y_position = 800
         
         pdf.save()
         output_pdf.seek(0)
