@@ -6,6 +6,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from bidi.algorithm import get_display
+import arabic_reshaper
 import os
 
 # פונקציה לטעינת רשימת הדרישות
@@ -29,6 +31,11 @@ def load_requirements():
             "מבנים יבילים יכללו שילוט בטיחות מתאים."
         ]
     })
+
+# פונקציה להתאמת טקסט עברי
+
+def rtl_text(text):
+    return get_display(arabic_reshaper.reshape(text))
 
 # הגדרת מבנה הדוח
 st.title("אפליקציית דוח מבדק בטיחות דיגיטלי")
@@ -86,14 +93,14 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
             font_name = "Helvetica"
         
         pdf.setFont(font_name, 12)
-        pdf.drawRightString(550, 800, "דוח מבדק בטיחות")
-        pdf.drawRightString(550, 780, f"שם בית הספר: {school_name}")
-        pdf.drawRightString(550, 760, f"שם עורך המבדק: {inspector_name}")
-        pdf.drawRightString(550, 740, f"תאריך המבדק: {date}")
+        pdf.drawRightString(550, 800, rtl_text("דוח מבדק בטיחות"))
+        pdf.drawRightString(550, 780, rtl_text(f"שם בית הספר: {school_name}"))
+        pdf.drawRightString(550, 760, rtl_text(f"שם עורך המבדק: {inspector_name}"))
+        pdf.drawRightString(550, 740, rtl_text(f"תאריך המבדק: {date}"))
         
         y_position = 700
         for index, row in df.iterrows():
-            text = f"ליקוי: {row['ליקוי']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | דרישה: {row['דרישה']} | קדימות: {row['קדימות']}"
+            text = rtl_text(f"ליקוי: {row['ליקוי']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | דרישה: {row['דרישה']} | קדימות: {row['קדימות']}")
             pdf.drawRightString(550, y_position, text)
             y_position -= 20
             if y_position < 50:
