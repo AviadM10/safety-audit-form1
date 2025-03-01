@@ -84,7 +84,7 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
     if st.button("ייצוא ל-PDF"):
         output_pdf = io.BytesIO()
         pdf = canvas.Canvas(output_pdf, pagesize=A4)
-        font_path = "fonts/NotoSansHebrew-Regular.ttf"
+        font_path = "fonts/Rubik-Regular.ttf"
         
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont("Hebrew", font_path))
