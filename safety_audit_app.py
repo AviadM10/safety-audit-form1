@@ -14,21 +14,43 @@ import os
 @st.cache_data
 def load_requirements():
     return pd.DataFrame({
-        "קטגוריה": ["שערים", "שערים", "שערים", "חשמל", "חשמל", "חשמל", "חצר", "חצר", "חצר", "מבנים", "מבנים", "מבנים"],
-        "מספר סעיף": ["3.32", "3.33", "3.34", "9.1", "9.2", "9.3", "3.1", "3.2", "3.3", "8.1", "8.2", "8.3"],
+        "קטגוריה": [
+            "שערים", "שערים", "שערים", "שערים", "שערים", "שערים",
+            "חשמל", "חשמל", "חשמל", "חשמל", "חשמל", "חשמל",
+            "חצר", "חצר", "חצר", "חצר", "חצר", "חצר",
+            "מבנים", "מבנים", "מבנים", "מבנים", "מבנים", "מבנים"
+        ],
+        "מספר סעיף": [
+            "3.32", "3.33", "3.34", "3.35", "3.36", "3.37",
+            "9.1", "9.2", "9.3", "9.4", "9.5", "9.6",
+            "3.1", "3.2", "3.3", "3.4", "3.5", "3.6",
+            "8.1", "8.2", "8.3", "8.4", "8.5", "8.6"
+        ],
         "תיאור": [
             "שערים ייפתחו כלפי חוץ, ללא בליטות מסוכנות.",
             "שערים יכילו מנגנון נעילה בטיחותי.",
             "השערים יהיו בגובה מתאים למניעת טיפוס.",
+            "שערים יהיו עמידים בתנאי מזג האוויר.",
+            "שערים לא יכילו חורים או פתחים מסוכנים.",
+            "שערים יהיו תקינים וללא נזקים מבניים.",
             "לוחות חשמל חייבים להיות סגורים עם סידורי נעילה.",
             "כל מערכת חשמל חייבת להיות עם מפסק פחת.",
             "מערכות חשמל חייבות להיות מסומנות בבירור.",
+            "חיווט חשוף יוסתר כראוי ולא יהיה נגיש לילדים.",
+            "שקעים ותקעים יהיו תקינים וללא חוטים קרועים.",
+            "חדרי חשמל יהיו נעולים ונגישים רק לאנשי מקצוע.",
             "החצר תהיה נקייה ממפגעים.",
             "שבילי גישה יהיו סלולים וללא מכשולים.",
             "לא יהיו חפצים חדים או בולטים בשטח החצר.",
+            "תשתיות ניקוז יהיו מתוחזקות וללא חסימות.",
+            "תאורת החצר תפעל כראוי ובטיחותית.",
+            "ריהוט חצר יהיה תקין וללא פגמים מסוכנים.",
             "מבנים יבילים יוצבו על בסיס מוגבה.",
             "כל מבנה יביל יכיל יציאת חירום נוספת.",
-            "מבנים יבילים יכללו שילוט בטיחות מתאים."
+            "מבנים יבילים יכללו שילוט בטיחות מתאים.",
+            "קירות המבנה יהיו במצב תקין ללא סדקים מסוכנים.",
+            "תקרות המבנה לא יכילו נזילות או עובש.",
+            "מבנה יהיה יציב וללא חשש לקריסה."
         ]
     })
 
@@ -80,34 +102,3 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
             df.to_excel(writer, index=False)
         output.seek(0)
         st.download_button(label="הורד קובץ Excel", data=output, file_name="safety_audit.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    if st.button("ייצוא ל-PDF"):
-        output_pdf = io.BytesIO()
-        pdf = canvas.Canvas(output_pdf, pagesize=A4)
-        font_path = "fonts/Rubik-Regular.ttf"
-        
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont("Hebrew", font_path))
-            font_name = "Hebrew"
-        else:
-            font_name = "Helvetica"
-        
-        pdf.setFont(font_name, 12)
-        pdf.drawRightString(550, 800, rtl_text("דוח מבדק בטיחות"))
-        pdf.drawRightString(550, 780, rtl_text(f"שם בית הספר: {school_name}"))
-        pdf.drawRightString(550, 760, rtl_text(f"שם עורך המבדק: {inspector_name}"))
-        pdf.drawRightString(550, 740, rtl_text(f"תאריך המבדק: {date}"))
-        
-        y_position = 700
-        for index, row in df.iterrows():
-            text = rtl_text(f"ליקוי: {row['ליקוי']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | דרישה: {row['דרישה']} | קדימות: {row['קדימות']}")
-            pdf.drawRightString(550, y_position, text)
-            y_position -= 20
-            if y_position < 50:
-                pdf.showPage()
-                pdf.setFont(font_name, 12)
-                y_position = 800
-        
-        pdf.save()
-        output_pdf.seek(0)
-        st.download_button(label="הורד PDF", data=output_pdf, file_name="safety_audit.pdf", mime="application/pdf")
