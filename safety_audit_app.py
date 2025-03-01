@@ -71,7 +71,8 @@ date = st.date_input("תאריך המבדק:")
 # בחירת קדימות
 priority_options = ["קדימות 0 - סכנת חיים", "קדימות 1 - תיקון מיידי", "קדימות 2 - תיקון בתוכנית עבודה"]
 
-data = []
+if "data" not in st.session_state:
+    st.session_state.data = []
 
 st.subheader("הוספת ליקוי")
 lakuy = st.text_input("תיאור הליקוי:")
@@ -84,14 +85,23 @@ priority = st.selectbox("קדימות:", priority_options)
 description = st.text_area("תיאור נוסף:")
 image = st.file_uploader("העלה תמונה (אופציונלי):", type=["jpg", "png", "jpeg"])
 
+if st.button("הוסף ליקוי"):
+    st.session_state.data.append({
+        "ליקוי": lakuy, "קטגוריה": category, "מספר סעיף": specific_section, "דרישה": selected_requirement, "קדימות": priority, "תיאור נוסף": description
+    })
+
+st.subheader("דוח ליקויים")
+df = pd.DataFrame(st.session_state.data)
+st.dataframe(df)
+
 if st.button("ייצוא ל-PDF"):
     output_pdf = io.BytesIO()
     pdf = canvas.Canvas(output_pdf, pagesize=A4)
     font_path = "fonts/Rubik-Regular.ttf"
     
     if os.path.exists(font_path):
-        pdfmetrics.registerFont(TTFont("Hebrew", font_path))
-        font_name = "Hebrew"
+        pdfmetrics.registerFont(TTFont("Rubik", font_path))
+        font_name = "Rubik"
     else:
         font_name = "Helvetica"
     
@@ -102,8 +112,8 @@ if st.button("ייצוא ל-PDF"):
     pdf.drawRightString(550, 740, rtl_text(f"תאריך המבדק: {date}"))
     
     y_position = 700
-    for index, row in relevant_requirements.iterrows():
-        text = rtl_text(f"ליקוי: {row['תיאור']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | קדימות: {priority}")
+    for index, row in df.iterrows():
+        text = rtl_text(f"ליקוי: {row['ליקוי']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | דרישה: {row['דרישה']} | קדימות: {row['קדימות']}")
         pdf.drawRightString(550, y_position, text)
         y_position -= 20
         if y_position < 50:
