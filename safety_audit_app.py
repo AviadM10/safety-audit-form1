@@ -17,7 +17,7 @@ pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 
 # הגדרת סגנון עם גופן עברית
 styles = getSampleStyleSheet()
-hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2)
+hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10)
 
 def fix_rtl(text):
     """מתקן כיווניות טקסט בעברית ל-ReportLab"""
@@ -53,23 +53,25 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
     elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
     
     # טבלת הבדיקות מסודרת מימין לשמאל
-    data = [[fix_rtl("קטגוריה"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
+    data = [[fix_rtl("קטגוריה"), fix_rtl("סטנדרט"), fix_rtl("סעיף"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for _, row in results_df.iterrows():
+        priority_color = colors.red if row['קדימות'] == "2 - טיפול בתוכנית עבודה" else colors.black
         img = ""
         if row['תמונה']:
             try:
                 img = Image(row['תמונה'], width=50, height=50)
             except:
                 img = ""
-        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['קדימות']), img])
+        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['סטנדרט']), fix_rtl(row['סעיף']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), Paragraph(fix_rtl(row['תיאור הליקוי']), hebrew_style), (fix_rtl(row['קדימות']), priority_color), img])
 
-    table = Table(data, colWidths=[100, 100, 70, 150, 70, 60])
+    table = Table(data, colWidths=[80, 60, 60, 100, 70, 150, 70, 60])
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('TEXTCOLOR', (6, 1), (6, -1), priority_color)
     ]))
     elements.append(table)
     
@@ -89,28 +91,9 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# יצירת טבלה דינמית לבדיקות
-st.header("רשימת הבדיקות")
-data = []
-categories = ["כיתות לימוד", "חצרות", "בטיחות אש", "מערכות חשמל"]
-elements = {
-    "כיתות לימוד": ["רצפה", "תאורה"],
-    "חצרות": ["מתקן משחקים"],
-    "בטיחות אש": ["מטף כיבוי"],
-    "מערכות חשמל": ["לוח חשמל ראשי"]
-}
-
-for category in categories:
-    st.subheader(category)
-    for item in elements[category]:
-        condition = st.radio(f"מצב - {item}", ["תקין", "לא תקין"], key=f"condition_{category}_{item}")
-        description = st.text_input(f"תיאור הליקוי - {item}", key=f"desc_{category}_{item}")
-        priority = st.selectbox(f"קדימות - {item}", ["0 - מפגע חמור", "1 - תיקון מיידי", "2 - טיפול בתוכנית עבודה"], key=f"priority_{category}_{item}")
-        image = st.file_uploader(f"העלה תמונה - {item}", type=["jpg", "png"], key=f"image_{category}_{item}")
-        data.append([category, item, condition, description, priority, image])
-
 # המרת הנתונים ל-DataFrame
-results_df = pd.DataFrame(data, columns=["קטגוריה", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
+columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
+results_df = pd.DataFrame(columns=columns)
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
