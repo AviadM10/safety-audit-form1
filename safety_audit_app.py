@@ -72,5 +72,9 @@ if len(data) > 0:
         <p><b>תאריך המבדק:</b> {date}</p>
         {df.to_html()}
         """
-        pdf = pdfkit.from_string(html_content, False)
+        pdf_options = {
+            'page-size': 'A4',
+            'encoding': 'UTF-8'
+        }
+        pdf = pdfkit.from_string(html_content, False, options=pdf_options)
         st.download_button(label="הורד PDF", data=pdf, file_name="safety_audit.pdf", mime="application/pdf")
