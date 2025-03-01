@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import io
-import pdfkit
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # פונקציה לטעינת רשימת הדרישות
 @st.cache_data
@@ -71,16 +72,21 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
         st.download_button(label="הורד קובץ Excel", data=output, file_name="safety_audit.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     if st.button("ייצוא ל-PDF"):
-        html_content = f"""
-        <h2>דוח מבדק בטיחות</h2>
-        <p><b>שם בית הספר:</b> {school_name}</p>
-        <p><b>שם עורך המבדק:</b> {inspector_name}</p>
-        <p><b>תאריך המבדק:</b> {date}</p>
-        {df.to_html()}
-        """
-        pdf_options = {
-            'page-size': 'A4',
-            'encoding': 'UTF-8'
-        }
-        pdf = pdfkit.from_string(html_content, False, options=pdf_options)
-        st.download_button(label="הורד PDF", data=pdf, file_name="safety_audit.pdf", mime="application/pdf")
+        output_pdf = io.BytesIO()
+        pdf = canvas.Canvas(output_pdf, pagesize=letter)
+        pdf.drawString(100, 750, f"דוח מבדק בטיחות")
+        pdf.drawString(100, 730, f"שם בית הספר: {school_name}")
+        pdf.drawString(100, 710, f"שם עורך המבדק: {inspector_name}")
+        pdf.drawString(100, 690, f"תאריך המבדק: {date}")
+        
+        y_position = 660
+        for index, row in df.iterrows():
+            pdf.drawString(100, y_position, f"ליקוי: {row['ליקוי']}, קטגוריה: {row['קטגוריה']}, סעיף: {row['מספר סעיף']}, דרישה: {row['דרישה']}, קדימות: {row['קדימות']}")
+            y_position -= 20
+            if y_position < 50:
+                pdf.showPage()
+                y_position = 750
+        
+        pdf.save()
+        output_pdf.seek(0)
+        st.download_button(label="הורד PDF", data=output_pdf, file_name="safety_audit.pdf", mime="application/pdf")
