@@ -1,119 +1,60 @@
 import streamlit as st
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-import arabic_reshaper
-from bidi.algorithm import get_display
-import os
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from datetime import datetime
+from PIL import Image
+import io
 
-# רישום פונט תומך עברית
-font_path = os.path.join(os.path.dirname(__file__), "Rubik-Regular.ttf")
-pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
+# פונקציה לטעינת רשימת הדרישות
+@st.cache_data
+def load_requirements():
+    return pd.DataFrame({
+        "קטגוריה": ["שערים", "חשמל", "חצר", "מבנים"],
+        "תיאור": [
+            "שערים ייפתחו כלפי חוץ, ללא בליטות מסוכנות.",
+            "לוחות חשמל חייבים להיות סגורים עם סידורי נעילה.",
+            "החצר תהיה נקייה ממפגעים.",
+            "מבנים יבילים יוצבו על בסיס מוגבה."
+        ]
+    })
 
-# הגדרת סגנון עם גופן עברית
-styles = getSampleStyleSheet()
-hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2)
+# הגדרת מבנה הדוח
+st.title("אפליקציית דוח מבדק בטיחות דיגיטלי")
 
-def fix_rtl(text):
-    """מתקן כיווניות טקסט בעברית ל-ReportLab"""
-    reshaped_text = arabic_reshaper.reshape(text)
-    return get_display(reshaped_text)
+# בחירת קדימות
+priority_options = ["קדימות 0 - סכנת חיים", "קדימות 1 - תיקון מיידי", "קדימות 2 - תיקון בתוכנית עבודה"]
 
-def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df):
-    pdf_filename = "safety_audit_report.pdf"
-    doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
-    elements = []
-    
-    # כותרת הדוח
-    elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
-    elements.append(Spacer(1, 12))  # רווח לפני טבלה
-    
-    # פרטי מוסד (ימין לשמאל)
-    details = [[fix_rtl(school_name), fix_rtl("שם המוסד")],
-               [fix_rtl(school_id), fix_rtl("סמל מוסד")],
-               [fix_rtl(phone), fix_rtl("טלפון")],
-               [fix_rtl(city), fix_rtl("עיר")],
-               [fix_rtl(ownership), fix_rtl("רשות/בעלות")],
-               [fix_rtl(audit_date), fix_rtl("תאריך")],
-               [fix_rtl(auditor_name), fix_rtl("שם עורך המבדק")]]
-    details_table = Table(details, colWidths=[300, 150])
-    details_table.setStyle(TableStyle([
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    elements.append(details_table)
-    elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
-    
-    # טבלת הבדיקות מסודרת מימין לשמאל
-    data = [[fix_rtl("קטגוריה"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
-    for _, row in results_df.iterrows():
-        img = ""
-        if row['תמונה']:
-            try:
-                img = Image(row['תמונה'], width=50, height=50)
-            except:
-                img = ""
-        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), fix_rtl(row['תיאור הליקוי']), fix_rtl(row['קדימות']), img])
-
-    table = Table(data, colWidths=[100, 100, 70, 150, 70, 60])
-    table.setStyle(TableStyle([
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    elements.append(table)
-    
-    doc.build(elements)
-    return pdf_filename
-
-# ממשק משתמש ב-Streamlit
-st.title("טופס דיגיטלי למבדק בטיחות במוסדות חינוך")
-
-# מילוי פרטי מוסד חינוכי
-st.header("פרטי המוסד")
-school_name = st.text_input("שם המוסד")
-school_id = st.text_input("סמל מוסד")
-phone = st.text_input("טלפון")
-city = st.text_input("עיר")
-ownership = st.text_input("רשות/בעלות")
-audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
-auditor_name = st.text_input("שם עורך המבדק")
-
-# יצירת טבלה דינמית לבדיקות
-st.header("רשימת הבדיקות")
 data = []
-categories = ["כיתות לימוד", "חצרות", "בטיחות אש", "מערכות חשמל"]
-elements = {
-    "כיתות לימוד": ["רצפה", "תאורה"],
-    "חצרות": ["מתקן משחקים"],
-    "בטיחות אש": ["מטף כיבוי"],
-    "מערכות חשמל": ["לוח חשמל ראשי"]
-}
 
-for category in categories:
-    st.subheader(category)
-    for item in elements[category]:
-        condition = st.radio(f"מצב - {item}", ["תקין", "לא תקין"], key=f"condition_{category}_{item}")
-        description = st.text_input(f"תיאור הליקוי - {item}", key=f"desc_{category}_{item}")
-        priority = st.selectbox(f"קדימות - {item}", ["0 - מפגע חמור", "1 - תיקון מיידי", "2 - טיפול בתוכנית עבודה"], key=f"priority_{category}_{item}")
-        image = st.file_uploader(f"העלה תמונה - {item}", type=["jpg", "png"], key=f"image_{category}_{item}")
-        data.append([category, item, condition, description, priority, image])
+st.subheader("הוספת ליקוי")
+lakuy = st.text_input("תיאור הליקוי:")
+category_options = load_requirements()["קטגוריה"].unique()
+category = st.selectbox("בחר קטגוריה:", category_options)
+selected_requirement = st.selectbox(
+    "בחר דרישה רלוונטית:", 
+    load_requirements()[load_requirements()["קטגוריה"] == category]["תיאור"]
+)
+priority = st.selectbox("קדימות:", priority_options)
+description = st.text_area("תיאור נוסף:")
+image = st.file_uploader("העלה תמונה (אופציונלי):", type=["jpg", "png", "jpeg"])
 
-# המרת הנתונים ל-DataFrame
-results_df = pd.DataFrame(data, columns=["קטגוריה", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
+if st.button("הוסף לדוח"):
+    row = {"ליקוי": lakuy, "קטגוריה": category, "דרישה": selected_requirement, "קדימות": priority, "תיאור נוסף": description, "תמונה": image}
+    data.append(row)
+    st.success("הליקוי נוסף לדוח!")
 
-# יצירת דוח PDF
-if st.button("הפק דוח PDF"):
-    pdf_file = generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df)
-    with open(pdf_file, "rb") as f:
-        st.download_button("הורד דוח PDF", f, file_name=pdf_file, mime="application/pdf")
+if len(data) > 0:
+    st.subheader("דוח מבדק")
+    df = pd.DataFrame(data)
+    st.dataframe(df.drop(columns=["תמונה"]))
+
+    if st.button("ייצוא ל-Excel"):
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False)
+        output.seek(0)
+        st.download_button(label="הורד קובץ Excel", data=output, file_name="safety_audit.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    if st.button("ייצוא ל-PDF"):
+        import pdfkit
+        html = df.to_html()
+        pdf = pdfkit.from_string(html, False)
+        st.download_button(label="הורד PDF", data=pdf, file_name="safety_audit.pdf", mime="application/pdf")
