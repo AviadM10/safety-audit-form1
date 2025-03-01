@@ -6,7 +6,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
-from reportlab.lib.utils import simpleSplit
 import os
 
 # פונקציה לטעינת רשימת הדרישות
@@ -78,13 +77,13 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
     if st.button("ייצוא ל-PDF"):
         output_pdf = io.BytesIO()
         pdf = canvas.Canvas(output_pdf, pagesize=A4)
-        font_path = "NotoSansHebrew-Regular.ttf"  # שם הקובץ של הפונט
+        font_path = "fonts/NotoSansHebrew-Regular.ttf"
         
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont("Hebrew", font_path))
             font_name = "Hebrew"
         else:
-            font_name = "Helvetica"  # fallback לפונט רגיל
+            font_name = "Helvetica"
         
         pdf.setFont(font_name, 12)
         pdf.drawRightString(550, 800, "דוח מבדק בטיחות")
@@ -94,15 +93,13 @@ if 'data' in st.session_state and len(st.session_state.data) > 0:
         
         y_position = 700
         for index, row in df.iterrows():
-            text = f"ליקוי: {row['ליקוי']}, קטגוריה: {row['קטגוריה']}, סעיף: {row['מספר סעיף']}, דרישה: {row['דרישה']}, קדימות: {row['קדימות']}"
-            wrapped_text = simpleSplit(text, font_name, 500)
-            for line in wrapped_text:
-                pdf.drawRightString(550, y_position, line)
-                y_position -= 20
-                if y_position < 50:
-                    pdf.showPage()
-                    pdf.setFont(font_name, 12)
-                    y_position = 800
+            text = f"ליקוי: {row['ליקוי']} | קטגוריה: {row['קטגוריה']} | סעיף: {row['מספר סעיף']} | דרישה: {row['דרישה']} | קדימות: {row['קדימות']}"
+            pdf.drawRightString(550, y_position, text)
+            y_position -= 20
+            if y_position < 50:
+                pdf.showPage()
+                pdf.setFont(font_name, 12)
+                y_position = 800
         
         pdf.save()
         output_pdf.seek(0)
