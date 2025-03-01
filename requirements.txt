@@ -3,3 +3,5 @@ pandas
 reportlab
 arabic-reshaper==2.1.4
 python-bidi
+xlsxwriter
+pdfkit
