@@ -17,31 +17,34 @@ pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 
 # הגדרת סגנון עם גופן עברית
 styles = getSampleStyleSheet()
-hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10)
+hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10, wordWrap='CJK')
 
+# טענת רשימת המנחה
+st.sidebar.header("רשימת המנחה")
+guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש להמיר את ה-PDF ל-CSV מראש
+
+# פונקציה לתיקון כיווניות בעברית
 def fix_rtl(text):
-    """מתקן כיווניות טקסט בעברית ל-ReportLab"""
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
+# יצירת דוח PDF
 def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df):
     pdf_filename = "safety_audit_report.pdf"
     doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
     elements = []
     
-    # כותרת הדוח
     elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
-    elements.append(Spacer(1, 12))  # רווח לפני טבלה
+    elements.append(Spacer(1, 12))
     
-    # פרטי מוסד (ימין לשמאל)
-    details = [[fix_rtl(school_name), fix_rtl("שם המוסד")],
-               [fix_rtl(school_id), fix_rtl("סמל מוסד")],
-               [fix_rtl(phone), fix_rtl("טלפון")],
-               [fix_rtl(city), fix_rtl("עיר")],
-               [fix_rtl(ownership), fix_rtl("רשות/בעלות")],
-               [fix_rtl(audit_date), fix_rtl("תאריך")],
-               [fix_rtl(auditor_name), fix_rtl("שם עורך המבדק")]]
-    details_table = Table(details, colWidths=[300, 150])
+    details = [[fix_rtl("שם המוסד"), fix_rtl(school_name)],
+               [fix_rtl("סמל מוסד"), fix_rtl(school_id)],
+               [fix_rtl("טלפון"), fix_rtl(phone)],
+               [fix_rtl("עיר"), fix_rtl(city)],
+               [fix_rtl("רשות/בעלות"), fix_rtl(ownership)],
+               [fix_rtl("תאריך"), fix_rtl(audit_date)],
+               [fix_rtl("שם עורך המבדק"), fix_rtl(auditor_name)]]
+    details_table = Table(details, colWidths=[150, 300])
     details_table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
@@ -50,9 +53,8 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(details_table)
-    elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
+    elements.append(Spacer(1, 12))
     
-    # טבלת הבדיקות מסודרת מימין לשמאל
     data = [[fix_rtl("קטגוריה"), fix_rtl("סטנדרט"), fix_rtl("סעיף"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for _, row in results_df.iterrows():
         priority_color = colors.red if row['קדימות'] == "2 - טיפול בתוכנית עבודה" else colors.black
@@ -70,8 +72,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, -1), 'HebrewFont'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('TEXTCOLOR', (6, 1), (6, -1), priority_color)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(table)
     
@@ -91,13 +92,16 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# רשימת הבדיקות הדינמית
+# רשימת הבדיקות הדינמית עם אפשרות בחירה מרשימת המנחה
 st.header("רשימת ליקויים")
 columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
 results_df = pd.DataFrame(columns=columns)
 
 def add_defect():
-    new_defect = {col: "" for col in columns}
+    category = st.selectbox("בחר קטגוריה", guide_df['קטגוריה'].unique())
+    standard = st.selectbox("בחר סטנדרט", guide_df[guide_df['קטגוריה'] == category]['סטנדרט'].unique())
+    clause = st.selectbox("בחר סעיף", guide_df[(guide_df['קטגוריה'] == category) & (guide_df['סטנדרט'] == standard)]['סעיף'].unique())
+    new_defect = {"קטגוריה": category, "סטנדרט": standard, "סעיף": clause, "פריט נבדק": "", "מצב": "", "תיאור הליקוי": "", "קדימות": "", "תמונה": ""}
     results_df.loc[len(results_df)] = new_defect
 
 if st.button("הוסף ליקוי"):
