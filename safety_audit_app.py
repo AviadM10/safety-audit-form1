@@ -53,7 +53,6 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
     elements.append(Spacer(1, 12))  # רווח לפני הטבלה הבאה
     
     # טבלת הבדיקות מסודרת מימין לשמאל
-    priority_color = colors.black  # ברירת מחדל
     data = [[fix_rtl("קטגוריה"), fix_rtl("סטנדרט"), fix_rtl("סעיף"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for _, row in results_df.iterrows():
         priority_color = colors.red if row['קדימות'] == "2 - טיפול בתוכנית עבודה" else colors.black
@@ -64,7 +63,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
             except:
                 img = ""
         data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['סטנדרט']), fix_rtl(row['סעיף']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), Paragraph(fix_rtl(row['תיאור הליקוי']), hebrew_style), (fix_rtl(row['קדימות']), priority_color), img])
-
+    
     table = Table(data, colWidths=[80, 60, 60, 100, 70, 150, 70, 60])
     table.setStyle(TableStyle([
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
@@ -92,9 +91,19 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# המרת הנתונים ל-DataFrame
+# רשימת הבדיקות הדינמית
+st.header("רשימת ליקויים")
 columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
 results_df = pd.DataFrame(columns=columns)
+
+def add_defect():
+    new_defect = {col: "" for col in columns}
+    results_df.loc[len(results_df)] = new_defect
+
+if st.button("הוסף ליקוי"):
+    add_defect()
+
+st.data_editor("רשימת ליקויים", results_df)
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
