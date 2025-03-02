@@ -19,14 +19,18 @@ pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 styles = getSampleStyleSheet()
 hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10, wordWrap='CJK')
 
-# טענת רשימת המנחה
+# טעינת רשימת המנחה
 st.sidebar.header("רשימת המנחה")
-guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש להמיר את ה-PDF ל-CSV מראש
-categories = guide_df['קטגוריה'].unique().tolist()
+try:
+    guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש לוודא שהקובץ קיים
+    categories = guide_df['קטגוריה'].dropna().unique().tolist()
+except FileNotFoundError:
+    st.sidebar.error("קובץ רשימת המנחה לא נמצא. ודא שהקובץ קיים בנתיב הנכון.")
+    categories = []
 
 # פונקציה לתיקון כיווניות בעברית
 def fix_rtl(text):
-    reshaped_text = arabic_reshaper.reshape(text)
+    reshaped_text = arabic_reshaper.reshape(str(text))
     return get_display(reshaped_text)
 
 # יצירת דוח PDF
@@ -93,15 +97,13 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# רשימת הבדיקות הדינמית עם אפשרות בחירה מרשימת המנחה
+# רשימת הבדיקות הדינמית
 st.header("רשימת ליקויים")
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame(columns=["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
 
 def add_defect():
-    new_defect = {"קטגוריה": st.selectbox("קטגוריה", categories, key=f"cat_{len(st.session_state.results_df)}"),
-                  "סטנדרט": "", "סעיף": "", "פריט נבדק": "", "מצב": "", "תיאור הליקוי": "", "קדימות": "", "תמונה": ""}
-    st.session_state.results_df = st.session_state.results_df.append(new_defect, ignore_index=True)
+    st.session_state.results_df = pd.concat([st.session_state.results_df, pd.DataFrame([{key: "" for key in st.session_state.results_df.columns}])], ignore_index=True)
 
 if st.button("הוסף ליקוי"):
     add_defect()
