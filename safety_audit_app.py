@@ -95,22 +95,20 @@ auditor_name = st.text_input("שם עורך המבדק")
 # רשימת הבדיקות הדינמית עם אפשרות בחירה מרשימת המנחה
 st.header("רשימת ליקויים")
 columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
-results_df = pd.DataFrame(columns=columns)
+if "results_df" not in st.session_state:
+    st.session_state.results_df = pd.DataFrame(columns=columns)
 
 def add_defect():
-    category = st.selectbox("בחר קטגוריה", guide_df['קטגוריה'].unique())
-    standard = st.selectbox("בחר סטנדרט", guide_df[guide_df['קטגוריה'] == category]['סטנדרט'].unique())
-    clause = st.selectbox("בחר סעיף", guide_df[(guide_df['קטגוריה'] == category) & (guide_df['סטנדרט'] == standard)]['סעיף'].unique())
-    new_defect = {"קטגוריה": category, "סטנדרט": standard, "סעיף": clause, "פריט נבדק": "", "מצב": "", "תיאור הליקוי": "", "קדימות": "", "תמונה": ""}
-    results_df.loc[len(results_df)] = new_defect
+    new_defect = {col: "" for col in columns}
+    st.session_state.results_df = st.session_state.results_df.append(new_defect, ignore_index=True)
 
 if st.button("הוסף ליקוי"):
     add_defect()
 
-st.data_editor("רשימת ליקויים", results_df)
+st.data_editor("רשימת ליקויים", st.session_state.results_df)
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
-    pdf_file = generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, results_df)
+    pdf_file = generate_pdf(school_name, school_id, phone, city, ownership, audit_date, auditor_name, st.session_state.results_df)
     with open(pdf_file, "rb") as f:
         st.download_button("הורד דוח PDF", f, file_name=pdf_file, mime="application/pdf")
