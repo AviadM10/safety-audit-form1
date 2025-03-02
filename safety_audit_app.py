@@ -19,12 +19,9 @@ pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 styles = getSampleStyleSheet()
 hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10, wordWrap='CJK')
 
-# טעינת רשימת המנחה בבטחה
+# טענת רשימת המנחה
 st.sidebar.header("רשימת המנחה")
-try:
-    guide_df = pd.read_csv("reshimaganyeladim.csv")
-except FileNotFoundError:
-    guide_df = pd.DataFrame(columns=["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק"])
+guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש להמיר את ה-PDF ל-CSV מראש
 
 # פונקציה לתיקון כיווניות בעברית
 def fix_rtl(text):
@@ -36,10 +33,10 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
     pdf_filename = "safety_audit_report.pdf"
     doc = SimpleDocTemplate(pdf_filename, pagesize=A4)
     elements = []
-
+    
     elements.append(Paragraph(fix_rtl("דוח מבדק בטיחות"), hebrew_style))
     elements.append(Spacer(1, 12))
-
+    
     details = [[fix_rtl("שם המוסד"), fix_rtl(school_name)],
                [fix_rtl("סמל מוסד"), fix_rtl(school_id)],
                [fix_rtl("טלפון"), fix_rtl(phone)],
@@ -57,10 +54,8 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
     ]))
     elements.append(details_table)
     elements.append(Spacer(1, 12))
-
-    # הכנת טבלה לליקויים
-    data = [[fix_rtl("קטגוריה"), fix_rtl("סטנדרט"), fix_rtl("סעיף"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     
+    data = [[fix_rtl("קטגוריה"), fix_rtl("סטנדרט"), fix_rtl("סעיף"), fix_rtl("פריט נבדק"), fix_rtl("מצב"), fix_rtl("תיאור הליקוי"), fix_rtl("קדימות"), fix_rtl("תמונה")]]
     for _, row in results_df.iterrows():
         priority_color = colors.red if row['קדימות'] == "2 - טיפול בתוכנית עבודה" else colors.black
         img = ""
@@ -69,16 +64,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
                 img = Image(row['תמונה'], width=50, height=50)
             except:
                 img = ""
-        data.append([
-            fix_rtl(row['קטגוריה']),
-            fix_rtl(row['סטנדרט']),
-            fix_rtl(row['סעיף']),
-            fix_rtl(row['פריט נבדק']),
-            fix_rtl(row['מצב']),
-            Paragraph(fix_rtl(row['תיאור הליקוי']), hebrew_style),
-            (fix_rtl(row['קדימות']), priority_color),
-            img
-        ])
+        data.append([fix_rtl(row['קטגוריה']), fix_rtl(row['סטנדרט']), fix_rtl(row['סעיף']), fix_rtl(row['פריט נבדק']), fix_rtl(row['מצב']), Paragraph(fix_rtl(row['תיאור הליקוי']), hebrew_style), (fix_rtl(row['קדימות']), priority_color), img])
     
     table = Table(data, colWidths=[80, 60, 60, 100, 70, 150, 70, 60])
     table.setStyle(TableStyle([
@@ -89,7 +75,7 @@ def generate_pdf(school_name, school_id, phone, city, ownership, audit_date, aud
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(table)
-
+    
     doc.build(elements)
     return pdf_filename
 
@@ -106,10 +92,9 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# רשימת הבדיקות הדינמית
+# רשימת הבדיקות הדינמית עם אפשרות בחירה מרשימת המנחה
 st.header("רשימת ליקויים")
 columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
-
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame(columns=columns)
 
@@ -120,7 +105,7 @@ def add_defect():
 if st.button("הוסף ליקוי"):
     add_defect()
 
-st.data_editor("רשימת ליקויים", st.session_state.results_df)
+st.dataframe(st.session_state.results_df)
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
