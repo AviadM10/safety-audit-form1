@@ -22,6 +22,7 @@ hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='Hebre
 # טענת רשימת המנחה
 st.sidebar.header("רשימת המנחה")
 guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש להמיר את ה-PDF ל-CSV מראש
+categories = guide_df['קטגוריה'].unique().tolist()
 
 # פונקציה לתיקון כיווניות בעברית
 def fix_rtl(text):
@@ -94,18 +95,18 @@ auditor_name = st.text_input("שם עורך המבדק")
 
 # רשימת הבדיקות הדינמית עם אפשרות בחירה מרשימת המנחה
 st.header("רשימת ליקויים")
-columns = ["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"]
 if "results_df" not in st.session_state:
-    st.session_state.results_df = pd.DataFrame(columns=columns)
+    st.session_state.results_df = pd.DataFrame(columns=["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
 
 def add_defect():
-    new_defect = pd.DataFrame([{col: "" for col in columns}])
-    st.session_state.results_df = pd.concat([st.session_state.results_df, new_defect], ignore_index=True)
+    new_defect = {"קטגוריה": st.selectbox("קטגוריה", categories, key=f"cat_{len(st.session_state.results_df)}"),
+                  "סטנדרט": "", "סעיף": "", "פריט נבדק": "", "מצב": "", "תיאור הליקוי": "", "קדימות": "", "תמונה": ""}
+    st.session_state.results_df = st.session_state.results_df.append(new_defect, ignore_index=True)
 
 if st.button("הוסף ליקוי"):
     add_defect()
 
-st.dataframe(st.session_state.results_df)
+st.data_editor("רשימת ליקויים", st.session_state.results_df, num_rows="dynamic")
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
