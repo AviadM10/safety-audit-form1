@@ -103,7 +103,8 @@ if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame(columns=["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
 
 def add_defect():
-    st.session_state.results_df = pd.concat([st.session_state.results_df, pd.DataFrame([{key: "" for key in st.session_state.results_df.columns}])], ignore_index=True)
+    new_entry = {key: "" for key in st.session_state.results_df.columns}
+    st.session_state.results_df = st.session_state.results_df.append(new_entry, ignore_index=True)
 
 if st.button("הוסף ליקוי"):
     add_defect()
