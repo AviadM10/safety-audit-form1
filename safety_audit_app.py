@@ -109,7 +109,7 @@ def add_defect():
 if st.button("הוסף ליקוי"):
     add_defect()
 
-st.data_editor("רשימת ליקויים", st.session_state.results_df, num_rows="dynamic")
+st.data_editor("רשימת ליקויים", st.session_state.results_df)
 
 # יצירת דוח PDF
 if st.button("הפק דוח PDF"):
