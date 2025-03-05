@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import arabic_reshaper
@@ -18,15 +18,6 @@ pdfmetrics.registerFont(TTFont('HebrewFont', font_path))
 # הגדרת סגנון עם גופן עברית
 styles = getSampleStyleSheet()
 hebrew_style = ParagraphStyle('Hebrew', parent=styles['Normal'], fontName='HebrewFont', fontSize=12, alignment=2, rightIndent=10, wordWrap='CJK')
-
-# טעינת רשימת המנחה
-st.sidebar.header("רשימת המנחה")
-try:
-    guide_df = pd.read_csv("reshimaganyeladim.csv")  # יש לוודא שהקובץ קיים
-    categories = guide_df['קטגוריה'].dropna().unique().tolist()
-except FileNotFoundError:
-    st.sidebar.error("קובץ רשימת המנחה לא נמצא. ודא שהקובץ קיים בנתיב הנכון.")
-    categories = []
 
 # פונקציה לתיקון כיווניות בעברית
 def fix_rtl(text):
@@ -90,17 +81,27 @@ ownership = st.text_input("רשות/בעלות")
 audit_date = st.text_input("תאריך", value=datetime.today().strftime('%d-%m-%Y'))
 auditor_name = st.text_input("שם עורך המבדק")
 
-# רשימת הבדיקות הדינמית
+# טופס להוספת ליקוי
 st.header("רשימת ליקויים")
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame(columns=["קטגוריה", "סטנדרט", "סעיף", "פריט נבדק", "מצב", "תיאור הליקוי", "קדימות", "תמונה"])
 
+category = st.selectbox("בחר קטגוריה", ["כיתות", "חצר", "בטיחות אש", "מערכות חשמל"])  
+standard = st.text_input("סטנדרט")  
+section = st.text_input("סעיף")  
+item = st.text_input("פריט נבדק")  
+condition = st.text_input("מצב")  
+defect_description = st.text_area("תיאור הליקוי")  
+priority = st.selectbox("קדימות", ["נמוכה", "בינונית", "גבוהה", "דחופה"])  
+image = st.file_uploader("העלה תמונה", type=["jpg", "png", "jpeg"])  
+
 def add_defect():
-    new_entry = {col: "" for col in st.session_state.results_df.columns}
+    new_entry = {"קטגוריה": category, "סטנדרט": standard, "סעיף": section, "פריט נבדק": item, "מצב": condition, "תיאור הליקוי": defect_description, "קדימות": priority, "תמונה": image.name if image else ""}
     st.session_state.results_df = pd.concat([st.session_state.results_df, pd.DataFrame([new_entry])], ignore_index=True)
 
 if st.button("הוסף ליקוי"):
     add_defect()
+    st.success("הליקוי נוסף בהצלחה!")
 
 st.dataframe(st.session_state.results_df)
 
